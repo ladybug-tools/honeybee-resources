@@ -227,7 +227,7 @@ def improvedDCcalc(epwFile, materialFile, geometryFiles, pointsFile,
 
     if calcDict['DirectSun']:
         calcDirectIlluminance(
-            epwFile=epwFile, solarDiscPath=solarDiscPath,
+            epwFile=epwFile, analemmaPath=solarDiscPath,
             sunListPath=sunListPath, sunMatrixPath=sunMatrixPath,
             materialFile=blackMaterial, geometryFiles=sceneDataBlack,
             pointsFile=pointsFile,
@@ -262,27 +262,30 @@ def improvedDCcalc(epwFile, materialFile, geometryFiles, pointsFile,
 
 
 if __name__ == "__main__":
-    os.chdir(os.path.dirname(os.getcwd()))
+    folder = r'C:\Users\Mostapha\Documents\code\ladybug-tools\honeybee\tests\\'
 
-    epw = os.path.join(os.getcwd(), 'honeybee/tests/room', 'test.epw')
-    sunRad = 'honeybee/tests/assets/phoenix.anlm'
+    epw = folder + 'room\\test.epw'
+    sunRad = folder + 'assets\\phoenix.anlm'
 
-    sunList = 'honeybee/tests/assets/phoenix.sun'
-    sunMtx = 'honeybee/tests/assets/phoenix_dir.mtx'
+    sunList = folder + 'assets\\phoenix.sun'
+    sunMtx = folder + 'assets\\phoenix_dir.mtx'
 
-    materialFile = r'honeybee/tests/room/room.mat'
-    geometryFiles = os.path.abspath('honeybee/tests/room/room.rad')
-    glazingGeometry = r'honeybee/tests/room/glazing.rad'
-    pointsFile = os.path.abspath(r'honeybee/tests/room/indoor_points.pts')
+    materialFile = folder + 'room\\room.mat'
+    geometryFiles = folder + 'room\\room.rad'
+    glazingGeometry = folder + 'room\\glazing.rad'
+    pointsFile = folder + 'room\\indoor_points.pts'
 
-    calcFolder = os.path.abspath(r'honeybee/tests/room')
-    outputFilePath = r'honeybee/tests/room/test.ill'
+    calcFolder = folder + 'room'
+    outputFilePath = folder + 'room\\test.ill'
 
-    improvedDCcalc(epwFile=epw, materialFile=materialFile, geometryFiles=geometryFiles,
-                   pointsFile=pointsFile,
-                   folderForCalculations=calcFolder, outputIllFilePath=outputFilePath,
-                   glazingGeometry=glazingGeometry,
-                   calcDict={'skyVectors': True,
-                             'DirectDCCoeff': True,
-                             'DCCoeff': True,
-                             'DirectSun': True})
+    res = improvedDCcalc(
+        epwFile=epw, materialFile=materialFile, geometryFiles=geometryFiles,
+        pointsFile=pointsFile,
+        folderForCalculations=calcFolder, outputIllFilePath=outputFilePath,
+        glazingGeometry=glazingGeometry,
+        calcDict={'skyVectors': True,
+                  'DirectDCCoeff': True,
+                  'DCCoeff': True,
+                  'DirectSun': True})
+
+    print(res)

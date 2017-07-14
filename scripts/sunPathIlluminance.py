@@ -78,6 +78,7 @@ def calcDirectIlluminance(
     octree = Oconv()
     octree.sceneFiles = sceneData + [analemmaPath]
     octree.outputFile = octreeFile
+    print(octree.toRadString())
     octree.execute()
 
     statusMsg('Creating sun coefficients')
@@ -100,7 +101,7 @@ def calcDirectIlluminance(
     rctb.outputFile = dcFile
     rctb.pointsFile = pointsFile
     rctb.rcontribParameters = rctPara
-
+    print(rctb.toRadString())
     rctb.execute()
 
     statusMsg('Performing matrix multiplication between the coefficients'
@@ -109,6 +110,7 @@ def calcDirectIlluminance(
     dct.daylightCoeffSpec = dcFile
     dct.skyVectorFile = sunMatrixPath
     dct.outputFile = tmpIllFile
+    print(dct.toRadString())
     dct.execute()
 
     statusMsg('Transposing the matrix as per time-series and calculating illuminance.')

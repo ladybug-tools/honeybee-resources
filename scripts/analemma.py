@@ -104,8 +104,7 @@ def analemma(epwFile, sunDiscRadPath, sunListPath=None, solarRadiationMatrixPath
             # run cmd, get results in the form of a list of lines.
             cmdRun = Popen(gendayCmd, stdout=PIPE, stderr=warningDump)
             data = cmdRun.stdout.read().split('\n')
-            print(data)
-            assert False
+
             # clean the output by throwing out comments and brightness functions.
             sunCurrentValue = []
             for lines in data:
