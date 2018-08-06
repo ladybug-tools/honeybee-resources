@@ -1,0 +1,29 @@
+void spotlight mat.spotlight
+0
+0
+7 1e5 1e5 1e5 5 0 0 -1e-5
+
+mat.spotlight ring obj.spotsource
+0
+0
+8 0 0 1 0 0 -1 0 0.01
+
+void light mat.light
+0
+0
+3 10 10 10
+
+mat.light ring obj.source
+0
+0
+8 0 0 2 0 0 -1 0 0.1
+
+void plastic mat.gray
+0
+0
+5 .7 .7 .7 0 0
+
+mat.gray polygon obj.plane
+0
+0
+12 -1 -1 0 1 -1 0 1 1 0 -1 1 0

@@ -1,0 +1,791 @@
+head	1.5;
+access;
+symbols;
+locks
+	taschreg:1.5; strict;
+comment	@# @;
+
+
+1.5
+date	2018.06.08.20.21.30;	author taschreg;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	2005.08.17.15.14.13;	author u-no-hoo;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2005.08.17.02.41.07;	author u-no-hoo;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2005.08.16.02.14.52;	author u-no-hoo;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2005.08.15.15.22.33;	author u-no-hoo;	state Exp;
+branches;
+next	;
+
+
+desc
+@Script for running tests on all photon types. Compares renderings from
+rpict as well as radiance/irradiance from rtrace at measurement points.
+@
+
+
+1.5
+log
+@Major rewrite, updating to new parameters. Also added reference values files with multiple sampls
+for noise immunity.
+@
+text
+@#!/bin/tcsh
+
+# Photon map sizes & bandwidths
+set numGlobal = 10000
+set numCaustic = 100000
+set numDirect = 100000
+set numBiasComp = 10000
+set numVolume = 100000
+
+set bwidth = 50
+set biasCompFixedBwidth = 1000
+set biasCompBwidth = '20 1000'
+
+# Random seed for mkpmap
+set rndSeed = '-apr 0'
+
+# Rendering size
+set imgSize = 200
+
+# Exposure for ximage
+set exp = '-e -4'
+
+# Num processors for rtrace / mkpmap
+set nProc = '-n 4'
+
+# Max allowable % irradiance deviation between Classic/reference & pmap
+set maxError = 10
+
+# Number of measurement points in highlight for bias compensation test
+# and distance from highlight centre
+set biasCompSamples = 100
+set biasCompRadius = 0.03
+
+# % relative error averaged over RGB, pos passed through
+set RCALC = 'rdiff(x, y) : if(x, (y - x) / x, 0); \
+             dr = rdiff($4, $10); dg = rdiff($5, $11); \
+             db = rdiff($6, $12); \
+             $1 = $1; $2 = $2; $3 = $3; \
+             $4 = floor(1000 * (dr + dg + db) / 3) / 10'
+             
+# Reference values
+set causticRef = cornell-caustic.dat
+set volumeRef = cornell-volume.dat
+
+
+cat << _EOF_
+
+This test suite verifies the installation of the RADIANCE photon map
+extension through a series of comparisons between RADIANCE Classic and
+RADIANCE with photon mapping using a simple Cornell box scene. A
+side-by-side visual comparison of renderings using rpict is performed,
+followed by a quantitative comparison of radiance/irradiance at discrete
+measurement points using rtrace.
+
+Choose test to run:
+
+1) Photon emission (direct pmap) test
+2) Global & precomputed pmap test
+3) Caustic pmap test
+4) Volume pmap test
+5) Bias compensation test
+6) All tests
+7) Quit
+
+_EOF_
+
+chooseTest:
+echo -n 'Your choice? '
+set testType = $<
+if ($testType !~ [1-7]) goto chooseTest
+if ($testType == 7) then
+   echo Have a nice day!
+   exit
+endif
+
+# Set up bit mask for tests to perform
+@@ testMask = (1 << $testType - 1)
+if ($testType == 6) @@ testMask--
+
+\rm -f *pm *pm.leaf *.amb err*.dat
+
+
+
+#
+# Test direct photons
+#
+if ($testMask & 1) then
+   clear
+   echo Photon Emission \(Direct Pmap\) Test: Visual Comparison\\n
+   oconv cornell-emission.rad > cornell.oct
+   echo Running mkpmap...
+   mkpmap $rndSeed -apd cornell.dpm $numDirect cornell.oct
+   echo \\nRunning rpict...
+   rpict -x $imgSize -y $imgSize -vf cornell.vf \
+      cornell.oct > cornell-rad.pic &
+   rpict -x $imgSize -y $imgSize -vf cornell.vf \
+      -ap cornell.dpm $bwidth cornell.oct > cornell-pmap.pic &
+   wait
+   echo cornell-rad: RADIANCE Classic direct illumination \(reference\).
+   echo cornell-pmap: Direct photon map, will be noisy.
+   echo \\nRenderings should be similar, with discernible emission pattern.
+   ximage -e auto cornell-rad.pic cornell-pmap.pic &
+   #clear
+   echo
+   echo Photon Emission \(Direct Pmap\) Test: Irradiance Comparison\\n
+   echo Running rtrace...
+   cat cornell-{wall,floor}.pos | rtrace $nProc -I -h -oov \
+      cornell.oct > cornell-rad.dat
+   cat cornell-{wall,floor}.pos | rtrace $nProc -I -h -oov \
+      -ap cornell.dpm $bwidth cornell.oct > cornell-pmap.dat
+   echo \\nPosX\\tPosY\\tPosZ\\t\%Error
+   rlam cornell-rad.dat cornell-pmap.dat | rcalc -e ${RCALC:q} | tee err.dat
+   set avgError = `cut -f4 err.dat | total -m`
+   echo 'Average deviation (should be < '$maxError'%) = '$avgError'%'
+   if (`ev "floor(if($avgError, $avgError, -($avgError)))"` < \
+       $maxError) then
+      echo Test successful.
+   else
+      echo 'Test *FAILED*, quitting.'
+      exit 1
+   endif
+   if ($testMask > 1) then
+      echo -n \\n'<Enter> for next test '
+      echo $<
+   endif
+endif
+
+
+
+#
+# Test global photons
+#
+@@ testMask = ($testMask >> 1)
+if ($testMask & 1) then
+   clear
+   echo Global \& Precomputed Pmap Test: Visual Comparison\\n
+   oconv cornell.rad > cornell.oct
+   echo Running mkpmap...
+   mkpmap $rndSeed -apg cornell1.gpm $numGlobal cornell.oct
+   mkpmap $rndSeed -app cornell2.gpm $numGlobal $bwidth cornell.oct
+   echo \\nRunning rpict...
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -af cornell-rad.amb \
+      -ab 5 cornell.oct > cornell-rad.pic &
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -af cornell-pmap1.amb \
+      -ab 1 -ap cornell1.gpm $bwidth cornell.oct > cornell-pmap.pic &
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -af cornell-pmap2.amb \
+      -ab 1 -ap cornell2.gpm 1 cornell.oct > cornell-precomp-pmap.pic &      
+   wait
+   echo 
+   echo cornell-rad: RADIANCE Classic global illumination \(reference\).
+   echo cornell-pmap: Global photon map.
+   echo cornell-precomp-pmap: Precomputed global photon map.
+   echo \\nRenderings should be identical.
+   ximage -e auto cornell-rad.pic cornell-pmap.pic cornell-precomp-pmap.pic &
+   #clear
+   echo
+   echo Global \& Precomputed Pmap Test: Irradiance Comparison\\n
+   echo Running rtrace...
+   cat cornell-{floor,ceil,wall}.pos | rtrace $nProc -I -h -oov \
+      -af cornell-rad.amb -ab 5 cornell.oct > cornell-rad.dat
+   cat cornell-{floor,ceil,wall}.pos | rtrace $nProc -I -h -oov \
+      -af cornell-pmap1.amb -ab 1 -ap cornell1.gpm $bwidth \
+      cornell.oct > cornell-pmap1.dat
+   cat cornell-{floor,ceil,wall}.pos | rtrace $nProc -I -h -oov \
+      -af cornell-pmap2.amb -ab 1 -ap cornell2.gpm 1 \
+      cornell.oct > cornell-pmap2.dat
+   echo \\nPosX\\tPosY\\tPosZ\\t\%Error\\t\%Error\(precomp\)
+   rlam cornell-rad.dat cornell-pmap1.dat | rcalc -e ${RCALC:q} > err1.dat
+   rlam cornell-rad.dat cornell-pmap2.dat | rcalc -e ${RCALC:q} > err2.dat
+   rlam err1.dat '\!cut -f4 err2.dat'
+   set avgError1 = `cut -f4 err1.dat | total -m`
+   set avgError2 = `cut -f4 err2.dat | total -m`
+   echo 'Average deviation (should be < '$maxError'%) =' \
+        $avgError1'%, '$avgError2'%'
+   set avgError1 = `ev "floor(if($avgError1, $avgError1, -($avgError1)))"`
+   set avgError2 = `ev "floor(if($avgError2, $avgError2, -($avgError2)))"`
+   if ($avgError1 < $maxError && $avgError2 < $maxError) then
+      echo Test successful.
+   else
+      echo 'Test *FAILED*, quitting.'
+      exit 1
+   endif
+   if ($testMask > 1) then
+      echo -n \\n'<Enter> for next test '
+      echo $<
+   endif
+endif
+
+
+
+#
+# Test caustic photons
+#
+@@ testMask = ($testMask >> 1)
+if ($testMask & 1) then
+   clear
+   echo Caustic Pmap Test: Visual Comparison\\n
+   oconv cornell-caustic.rad > cornell.oct
+   echo Running mkpmap...
+   mkpmap $nProc $rndSeed -apc cornell.cpm $numCaustic cornell.oct
+   echo \\nRunning rpict...
+   rpict -x $imgSize -y $imgSize -vf cornell.vf \
+      cornell.oct > cornell-rad.pic &
+   rpict -x $imgSize -y $imgSize -vf cornell.vf \
+      -ap cornell.cpm $bwidth -ab 0 cornell.oct > cornell-pmap.pic &
+   wait
+   echo cornell-rad: RADIANCE Classic.
+   echo cornell-pmap: Caustic photon map, caustic should appear below sphere.
+   ximage -e auto cornell-rad.pic cornell-pmap.pic &
+   #clear
+   echo
+   echo Caustic Pmap Test: Irradiance Comparison\\n
+   echo Running rtrace...
+   cat cornell-caustic.pos | rtrace $nProc -I -h -oov \
+      -ap cornell.cpm $bwidth cornell.oct > cornell-pmap.dat
+   # Uncomment to update reference file
+   # \cp -f cornell-pmap.dat $causticRef
+   echo \\nPosX\\tPosY\\tPosZ\\t\%Error
+   rlam $causticRef cornell-pmap.dat | rcalc -e ${RCALC:q} | tee err.dat
+   set avgError = `cut -f4 err.dat | total -m`
+   echo 'Average deviation within caustic (should be < '$maxError'%)' \
+        = $avgError'%'
+   if (`ev "floor(if($avgError, $avgError, -($avgError)))"` < \
+       $maxError) then
+      echo Test successful.
+   else
+      echo 'Test *FAILED*, quitting.'
+      exit 1
+   endif
+   if ($testMask > 1) then
+      echo -n \\n'<Enter> for next test '
+      echo $<
+   endif
+endif
+
+
+
+#
+# Test volume photons
+#
+@@ testMask = ($testMask >> 1)
+if ($testMask & 1) then
+   clear
+   echo Volume Pmap Test: Visual Comparison\\n
+   oconv cornell-mist.rad > cornell.oct
+   echo Running mkpmap...
+   mkpmap $nProc $rndSeed -apv cornell.vpm $numVolume cornell.oct
+   echo \\nRunning rpict...
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -ms 0.01 \
+      cornell.oct > cornell-rad.pic &
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -ms 0.01 \
+      -ap cornell.vpm $bwidth -ab 0 cornell.oct > cornell-pmap.pic &
+   wait
+   echo cornell-rad: RADIANCE Classic.
+   echo cornell-pmap: Volume photon map, caustic should appear below sphere.
+   ximage -e +0 cornell-rad.pic cornell-pmap.pic &
+   #clear
+   echo
+   echo Volume Pmap Test: Radiance Comparison\\n
+   echo Running rtrace...
+   # Note we repeat for the same positions, generating a different pmap
+   # on every iteration (via random seed) to average out inscattering 
+   # sampling noise along the rays.
+   cat cornell-volume.pos | rtrace $nProc -h -odv -lr 1 -ms 0.1 \
+      -ap cornell.vpm $bwidth -ab 0 cornell.oct > cornell-pmap.dat
+   @@ i = 0
+   while ($i < 10)
+      mkpmap $nProc -apr $i -fo -apv cornell.vpm $numVolume cornell.oct
+      cat cornell-volume.pos | rtrace $nProc -h -odv -lr 1 -ms 0.1 \
+         -ap cornell.vpm $bwidth -ab 0 cornell.oct >> cornell-pmap.dat
+      @@ i++
+   end
+   # Uncomment to update reference file
+   #\cp -f cornell-pmap.dat $volumeRef
+   echo \\nDirX\\t\\tDirY\\t\\tDirZ\\t\\t\%Error
+   # Average first, then diff; less sensitive to noise
+   rlam "\!total -m $volumeRef" "\!total -m cornell-pmap.dat" | \
+      rcalc -e ${RCALC:q} | tee err.dat
+   set avgError = `cut -f4 err.dat`
+   echo 'Average deviation within volume caustic (should be <' \
+        $maxError'%) = '$avgError'%'
+   if (`ev "floor(if($avgError, $avgError, -($avgError)))"` < \
+       $maxError) then
+      echo Test successful.
+   else
+      echo 'Test *FAILED*, quitting.'
+      exit 1
+   endif
+   if ($testMask > 1) then
+      echo -n \\n'<Enter> for next test '
+      echo $<
+   endif
+endif
+
+
+
+#
+# Test bias compensation
+#
+@@ testMask = ($testMask >> 1)
+if ($testMask & 1) then
+   clear
+   echo Bias Compensation Test: Visual Comparison\\n
+   oconv hilite.rad > hilite.oct
+   echo Running mkpmap...
+   mkpmap $rndSeed -apd hilite.dpm $numBiasComp hilite.oct
+   echo \\nRunning rpict...
+   rpict -x $imgSize -y $imgSize -vf hilite.vf \
+      hilite.oct > hilite-rad.pic &
+   rpict -x $imgSize -y $imgSize -vf hilite.vf \
+      -ap hilite.dpm $biasCompFixedBwidth hilite.oct > hilite-pmap.pic &
+   rpict -x $imgSize -y $imgSize -vf hilite.vf \
+      -ap hilite.dpm $biasCompBwidth hilite.oct > hilite-pmap-biascomp.pic &
+   wait
+   echo hilite-rad: RADIANCE Classic direct illumination \(reference\)
+   echo hilite-pmap: Photon map using fixed bandwidth, severely blurred
+   echo hilite-pmap-biascomp: Photon map using bias compensation, blurring \
+        reduced        
+   echo \\nRADIANCE Classic and bias compensated photon map should have \
+        similar irradiance. Irradiance from photon map using fixed \
+        bandwidth will be substantially lower \(=bias\).
+   ximage $exp hilite-rad.pic hilite-pmap.pic hilite-pmap-biascomp.pic &
+   #clear
+   echo
+   echo Bias Compensation Test: Irradiance Comparison\\n
+   echo Running rtrace...
+   cnt $biasCompSamples | \
+      rcalc -e '$1='$biasCompRadius'*cos(2*PI*$1/'$biasCompSamples'); \
+                $2='$biasCompRadius'*sin(2*PI*$1/'$biasCompSamples'); \
+                $3=0; $4=0; $5=0; $6=1' > hilite.pos                
+   cat hilite.pos | rtrace $nProc -I -h -oov \
+      hilite.oct > hilite-rad.dat
+   cat hilite.pos | rtrace $nProc -I -h -oov \
+      -ap hilite.dpm $biasCompFixedBwidth hilite.oct > hilite-pmap1.dat
+   cat hilite.pos | rtrace $nProc -I -h -oov \
+      -ap hilite.dpm $biasCompBwidth hilite.oct > hilite-pmap2.dat
+   rlam hilite-rad.dat hilite-pmap1.dat | rcalc -e ${RCALC:q} > err1.dat
+   rlam hilite-rad.dat hilite-pmap2.dat | rcalc -e ${RCALC:q} > err2.dat
+   set avgError1 = `cut -f4 err1.dat | total -m`
+   set avgError2 = `cut -f4 err2.dat | total -m`
+   echo \\n'Average fixed bwidth deviation (should be > '$maxError'%)' \
+        = $avgError1'%'
+   echo 'Average bias compensation deviation (should be < '$maxError'%)' \
+        = $avgError2'%'
+   set avgError2 = `ev "floor(if($avgError2, $avgError2, -($avgError2)))"`
+   if ($avgError2 < $maxError) then
+      echo Test successful.
+   else
+      echo 'Test *FAILED*, quitting.'
+      exit 1
+   endif
+endif
+
+echo \\nTest suite completed -- have a nice day!
+
+@
+
+
+1.4
+log
+@Added bias compensation test.
+Minor changes to output of tests and added descriptions of what renderings
+(should) depict.
+@
+text
+@d5 2
+a6 2
+set numCaustic = 50000
+set numDirect = 50000
+d8 1
+a8 1
+set numVolume = 25000
+d11 5
+a15 2
+set biasCompFixedBwidth = 2000
+set biasCompBwidth = '20 2000'
+d20 2
+a21 2
+# Max allowable % irradiance deviation between Classic & PMAP
+set maxError = 10
+d23 2
+a24 2
+# Min allowable % caustic irradiance deviation between Classic & PMAP
+set minCausticError = 300
+d26 2
+a27 2
+# Min allowable % volume caustic radiance deviation between Classic & PMAP
+set minVolumeError = 1000
+d40 5
+d80 1
+a80 1
+\rm -f *pm *.amb
+d92 1
+a92 1
+   mkpmap -apd cornell.dpm $numDirect cornell.oct
+d95 1
+a95 1
+      cornell.oct > cornell-rad.pic
+d97 2
+a98 1
+      -apd cornell.dpm $bwidth cornell.oct > cornell-pmap.pic
+d102 3
+a104 2
+   ximage cornell-rad.pic cornell-pmap.pic
+   clear
+d107 1
+a107 1
+   cat cornell-{wall,floor}.pos | rtrace -I -h -oov \
+d109 2
+a110 2
+   cat cornell-{wall,floor}.pos | rtrace -I -h -oov \
+      -apd cornell.dpm $bwidth cornell.oct > cornell-pmap.dat
+d139 2
+a140 2
+   mkpmap -apg cornell1.gpm $numGlobal cornell.oct
+   mkpmap -app cornell2.gpm $numGlobal $bwidth cornell.oct
+d143 1
+a143 1
+      -ab 5 cornell.oct > cornell-rad.pic
+d145 1
+a145 1
+      -ab 1 -apg cornell1.gpm $bwidth cornell.oct > cornell-pmap.pic
+d147 2
+a148 1
+      -ab 1 -app cornell2.gpm cornell.oct > cornell-precomp-pmap.pic      
+d154 3
+a156 2
+   ximage cornell-rad.pic cornell-pmap.pic cornell-precomp-pmap.pic
+   clear
+d159 1
+a159 1
+   cat cornell-{floor,ceil,wall}.pos | rtrace -I -h -oov \
+d161 2
+a162 2
+   cat cornell-{floor,ceil,wall}.pos | rtrace -I -h -oov \
+      -af cornell-pmap1.amb -ab 1 -apg cornell1.gpm $bwidth \
+d164 2
+a165 2
+   cat cornell-{floor,ceil,wall}.pos | rtrace -I -h -oov \
+      -af cornell-pmap2.amb -ab 1 -app cornell2.gpm \
+d200 1
+a200 1
+   mkpmap -apc cornell.cpm $numCaustic cornell.oct
+d203 1
+a203 1
+      cornell.oct > cornell-rad.pic
+d205 2
+a206 1
+      -apc cornell.cpm $bwidth cornell.oct > cornell-pmap.pic
+d209 3
+a211 2
+   ximage cornell-rad.pic cornell-pmap.pic
+   clear
+d214 4
+a217 4
+   cat cornell-caustic.pos | rtrace -I -h -oov \
+      cornell.oct > cornell-rad.dat
+   cat cornell-caustic.pos | rtrace -I -h -oov \
+      -apc cornell.cpm $bwidth cornell.oct > cornell-pmap.dat
+d219 3
+a221 3
+   rlam cornell-rad.dat cornell-pmap.dat | rcalc -e ${RCALC:q} | tee err.dat
+   set avgError = `cut -f4 err.dat`
+   echo 'Deviation within caustic (should be > '$minCausticError'%)' \
+d223 2
+a224 2
+   if (`ev "floor(if($avgError, $avgError, -($avgError)))"` > \
+       $minCausticError) then
+d247 1
+a247 1
+   mkpmap -apv cornell.vpm $numVolume cornell.oct
+d250 1
+a250 1
+      cornell.oct > cornell-rad.pic
+d252 2
+a253 1
+      -apv cornell.vpm $bwidth cornell.oct > cornell-pmap.pic
+d256 3
+a258 2
+   ximage cornell-rad.pic cornell-pmap.pic
+   clear
+d261 14
+a274 4
+   cat cornell-volume.pos | rtrace -h -odv -lr 1 -ms 0.01 \
+      cornell.oct > cornell-rad.dat
+   cat cornell-volume.pos | rtrace -h -odv -lr 1 -ms 0.01 \
+      -apv cornell.vpm $bwidth cornell.oct > cornell-pmap.dat
+d276 8
+a283 6
+   rlam cornell-rad.dat cornell-pmap.dat | rcalc -e ${RCALC:q} | tee err.dat
+   set avgError = `cut -f4 err.dat | total -m`
+   echo 'Average deviation within volume caustic (should be >' \
+        $minVolumeError'%) = '$avgError'%'
+   if (`ev "floor(if($avgError, $avgError, -($avgError)))"` > \
+       $minVolumeError) then
+d306 1
+a306 1
+   mkpmap -apd hilite.dpm $numBiasComp hilite.oct
+d309 1
+a309 1
+      hilite.oct > hilite-rad.pic
+d311 1
+a311 1
+      -apd hilite.dpm $biasCompFixedBwidth hilite.oct > hilite-pmap.pic
+d313 2
+a314 1
+      -apdb hilite.dpm $biasCompBwidth hilite.oct > hilite-pmap-biascomp.pic
+d322 3
+a324 2
+   ximage hilite-rad.pic hilite-pmap.pic hilite-pmap-biascomp.pic
+   clear
+d331 1
+a331 1
+   cat hilite.pos | rtrace -I -h -oov \
+d333 4
+a336 4
+   cat hilite.pos | rtrace -I -h -oov \
+      -apd hilite.dpm $biasCompFixedBwidth hilite.oct > hilite-pmap1.dat
+   cat hilite.pos | rtrace -I -h -oov \
+      -apdb hilite.dpm $biasCompBwidth hilite.oct > hilite-pmap2.dat
+d341 1
+a341 1
+   echo \\n'Average fixed bwidth deviation (should be << -'$maxError'%)' \
+d355 1
+@
+
+
+1.3
+log
+@Added precomputed global pmap test.
+@
+text
+@d3 1
+d7 1
+d9 1
+d11 2
+d14 1
+d26 5
+d90 3
+a92 1
+   echo \(Pmap rendering will be noisy\)
+d101 1
+a101 1
+   echo \\nPosX\\tPosY\\tPosZ\\t\% deviation
+d104 1
+a104 1
+   echo 'Average deviation (should be <'$maxError'%) = '$avgError'%'
+d138 5
+a142 1
+   echo \(Renderings should be identical\)
+d155 1
+a155 1
+   echo \\nPosX\\tPosY\\tPosZ\\t\%Dev\\t\%Dev\(precomp\)
+d161 1
+a161 1
+   echo 'Average deviation (should be <'$maxError'%) = ' \
+d190 1
+a190 1
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -af cornell-rad.amb \
+d192 1
+a192 1
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -af cornell-pmap.amb \
+d194 2
+a195 1
+   echo \(Caustic should appear below sphere in pmap rendering\)
+d204 1
+a204 1
+   echo \\nPosX\\tPosY\\tPosZ\\t\% deviation
+d207 2
+a208 2
+   echo 'Deviation within caustic (should be >' \
+        $minCausticError'%) = '$avgError'%'
+d239 2
+a240 1
+   echo \(Volume caustic should appear below sphere in pmap rendering\)
+d249 1
+a249 1
+   echo \\nDirX\\t\\tDirY\\t\\tDirZ\\t\\t\% deviation
+d253 1
+a253 1
+        $minVolumeError '%) = '$avgError'%'
+d261 61
+@
+
+
+1.2
+log
+@Added \n to echos instead of echoing empty lines, which older tcsh
+variants (noticed under IRIX) simply ignored.
+@
+text
+@d1 1
+a1 1
+#!/bin/tcsh -f
+d39 1
+a39 1
+2) Global pmap test
+d42 3
+a44 2
+5) All tests
+6) Quit
+d51 2
+a52 2
+if ($testType !~ [1-6]) goto chooseTest
+if ($testType == 6) then
+d59 1
+a59 1
+if ($testType == 5) @@ testMask--
+d78 2
+a79 2
+      -apd cornell.dpm 50 cornell.oct > cornell-pmap.pic
+   echo '(Pmap rendering will be noisy)'
+d87 1
+a87 1
+      -apd cornell.dpm 50 cornell.oct > cornell-pmap.dat
+d113 1
+a113 1
+   echo Global Pmap Test: Visual Comparison\\n
+d116 2
+a117 1
+   mkpmap -apg cornell.gpm $numGlobal cornell.oct
+d121 6
+a126 4
+   rpict -x $imgSize -y $imgSize -vf cornell.vf -af cornell-pmap.amb \
+      -ab 1 -apg cornell.gpm 50 cornell.oct > cornell-pmap.pic
+   echo '(Renderings should be identical)'
+   ximage cornell-rad.pic cornell-pmap.pic
+d128 1
+a128 1
+   echo Global Pmap Test: Irradiance Comparison\\n
+d133 16
+a148 8
+      -af cornell-pmap.amb -ab 1 -apg cornell.gpm 50 \
+      cornell.oct > cornell-pmap.dat
+   echo \\nPosX\\tPosY\\tPosZ\\t\% deviation
+   rlam cornell-rad.dat cornell-pmap.dat | rcalc -e ${RCALC:q} | tee err.dat
+   set avgError = `cut -f4 err.dat | total -m`
+   echo 'Average deviation (should be <'$maxError'%) = '$avgError'%'
+   if (`ev "floor(if($avgError, $avgError, -($avgError)))"` < \
+       $maxError) then
+d176 2
+a177 2
+      -apc cornell.cpm 50 cornell.oct > cornell-pmap.pic
+   echo '(Caustic should appear below sphere in pmap rendering)'
+d185 1
+a185 1
+      -apc cornell.cpm 50 cornell.oct > cornell-pmap.dat
+d220 2
+a221 2
+      -apv cornell.vpm 50 cornell.oct > cornell-pmap.pic
+   echo '(Volume caustic should appear below sphere in pmap rendering)'
+d229 1
+a229 1
+      -apv cornell.vpm 50 cornell.oct > cornell-pmap.dat
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d69 1
+a69 2
+   echo Photon Emission \(Direct Pmap\) Test: Visual Comparison
+   echo
+d73 1
+a73 2
+   echo
+   echo Running rpict...
+d81 1
+a81 2
+   echo Photon Emission \(Direct Pmap\) Test: Irradiance Comparison
+   echo
+d87 1
+a87 2
+   echo
+   echo PosX\\tPosY\\tPosZ\\t\% deviation
+d99 1
+a99 2
+      echo
+      echo -n '<Enter> for next test '
+d112 1
+a112 2
+   echo Global Pmap Test: Visual Comparison
+   echo
+d116 1
+a116 2
+   echo
+   echo Running rpict...
+d124 1
+a124 2
+   echo Global Pmap Test: Irradiance Comparison
+   echo
+d131 1
+a131 2
+   echo
+   echo PosX\\tPosY\\tPosZ\\t\% deviation
+d143 1
+a143 2
+      echo
+      echo -n '<Enter> for next test '
+d156 1
+a156 2
+   echo Caustic Pmap Test: Visual Comparison
+   echo
+d160 1
+a160 2
+   echo
+   echo Running rpict...
+d168 1
+a168 2
+   echo Caustic Pmap Test: Irradiance Comparison
+   echo
+d174 1
+a174 2
+   echo
+   echo PosX\\tPosY\\tPosZ\\t\% deviation
+d187 1
+a187 2
+      echo
+      echo -n '<Enter> for next test '
+d200 1
+a200 2
+   echo Volume Pmap Test: Visual Comparison
+   echo
+d204 1
+a204 2
+   echo
+   echo Running rpict...
+a210 1
+
+d212 1
+a212 2
+   echo Volume Pmap Test: Radiance Comparison
+   echo
+d218 1
+a218 2
+   echo
+   echo DirX\\t\\tDirY\\t\\tDirZ\\t\\t\% deviation
+d232 1
+a232 2
+echo
+echo Test suite completed -- have a nice day!
+@
