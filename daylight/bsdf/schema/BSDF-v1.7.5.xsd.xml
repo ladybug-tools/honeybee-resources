@@ -1,0 +1,725 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2006 sp2 U (http://www.altova.com) by Christian Kohler (Lawrence Berkeley National Lab) -->
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+	<xsd:annotation>
+		<xsd:documentation>Schema version 1.0 designed by LBNL to store Bidirectional Scattering Data for complex glazing systems
+Intended to be read by WINDOW6 and other software. Designed by Christian Kohler, Robin Mitchell and Luis Fernandes. Created September 4 2005, updated Oct 7: added emissivity and TIR. Updated November 3rd, added nPhis to basis definition. jckohler@lbl.gov. Update March 7 2006, expanded the bounds section in AngleBasisBlock to consist of a upper and lower bound. This information is not always needed, you can usually figure it out by working backwards from 90 degrees
+Update: February 9th 2007, added version number, started with 1.0 
+Changed ThicknessUniteEnam to LengthUnitEnum
+Add Geometry tag 
+February 12th version 1.1, changed order in AngleBasisBlock to be ThetaBounds before nPhis
+March 14th version 1.2 added SourceSpectrum and DetectorSpectrum to WavelengthData section
+									 added DiffusingGlassCoverageFraction and WovenShadeOpenessFraction to Geometry
+									 added Transmittance, ReflectanceFront and ReflectanceBack to OpticalProperties under Material,
+September 2007 version 1.3 added TarcogInput element, added WovenshadeThreadDiameter, WovenshadeThickness and WovenshadeThreadSpacing to Geometry section
+2009 version 1.4 : compatible with Radiance MkIllum come
+February 2010 version 1.5: added framing section, 
+Feburary 2010 version 1.5.1 added back and front to absorptance in WaveLengthDataDirectionEnum, changed scateringdatatypeenum from Bi-Directional Transmittance to Fractional
+March 2010, version 1.5.2, changed wavelengthunit to Nanometer, instead of Nanometers
+August 2012, version 1.7.0, added WindowElementType Material, added DeviceType: Cellular Shade, added Fractional Diffuse and Fractional Specular to ScatteringDataType
+1.7.3 added ProductName (October 10-2012)
+1.7.4 added Pleated Shade (July 2014)
+1.7.5 added Solid Layer (Aug 2014)
+</xsd:documentation>
+	</xsd:annotation>
+	<xsd:simpleType name="WavelengthDataDirectionEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Transmission Front"/>
+			<xsd:enumeration value="Transmission Back"/>
+			<xsd:enumeration value="Reflection Front"/>
+			<xsd:enumeration value="Reflection Back"/>
+			<xsd:enumeration value="Absorbed Front"/>
+			<xsd:enumeration value="Absorbed Back"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="WindowElementTypeEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="System"/>
+			<xsd:enumeration value="Layer"/>
+			<xsd:enumeration value="Material"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="FileTypeEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="BSDF"/>
+			<xsd:enumeration value="Non-BSDF"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:annotation>
+		<xsd:documentation>AngleBasisTypeEnum lists the various values possible for AngleBasisType, it specifies what angular basis that follows is defined for, usually you will have one for incidence, one for transmission and one for Reflection Front and Back</xsd:documentation>
+	</xsd:annotation>
+	<xsd:simpleType name="ScatteringDataTypeEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="BTDF"/>
+			<xsd:enumeration value="Fractional Diffuse"/>
+			<xsd:enumeration value="Fractional Specular"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="IncidentDataStructureEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Columns"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="WavelengthUnitEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Integral"/>
+			<xsd:enumeration value="Nanometer"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="DeviceTypeEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Venetian blind horizontal"/>
+			<xsd:enumeration value="Venetian blind vertical"/>
+			<xsd:enumeration value="Woven shade"/>
+			<xsd:enumeration value="Diffusing glass"/>
+			<xsd:enumeration value="Specular glass"/>
+			<xsd:enumeration value="Fritted Glass"/>
+			<xsd:enumeration value="Cellular Shade"/>
+			<xsd:enumeration value="Pleated Shade"/>
+			<xsd:enumeration value="Solid Layer"/>	
+			<xsd:enumeration value="Other"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="LengthUnitEnum">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="Meter"/>
+			<xsd:enumeration value="Millimeter"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:simpleType name="conductivityUnitEnum">
+		<xsd:restriction base="xsd:NMTOKEN">
+			<xsd:enumeration value="WPerMeterK"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+	<xsd:element name="Layer">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="Material" minOccurs="0"/>
+				<xsd:element ref="Geometry" minOccurs="0"/>
+				<xsd:element ref="DataDefinition"/>
+				<xsd:element ref="WavelengthData" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Material">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:element ref="Name"/>
+				<xsd:element ref="ProductName" minOccurs="0"/>
+				<xsd:element ref="Manufacturer" minOccurs="0"/>
+				<xsd:element ref="Thickness" minOccurs="0"/>
+				<xsd:element name="DeviceType" type="DeviceTypeEnum" minOccurs="0"/>
+				<xsd:element ref="ThermalConductivity" minOccurs="0"/>
+				<xsd:element ref="AirPermeability" minOccurs="0"/>
+				<xsd:element ref="EmissivityFront" minOccurs="0"/>
+				<xsd:element ref="EmissivityBack" minOccurs="0"/>
+				<xsd:element ref="TIR" minOccurs="0"/>
+				<xsd:element ref="EffectiveOpennessFraction" minOccurs="0"/>
+				<xsd:element ref="OpticalProperties" minOccurs="0"/>
+				<xsd:element ref="Color" minOccurs="0"/>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:all>
+			<xsd:attribute name="LayerNumber" type="xsd:int" use="optional"/>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="OpticalProperties">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:annotation>
+					<xsd:documentation>These are the overall Optical Properties for the system.  these are generic system properties and are not required. Comments field can be used to describe if this is normal incidence etc</xsd:documentation>
+				</xsd:annotation>
+				<xsd:element ref="Transmittance" minOccurs="0"/>
+				<xsd:element ref="ReflectanceFront" minOccurs="0"/>
+				<xsd:element ref="ReflectanceBack" minOccurs="0"/>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:all>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Geometry">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:element ref="BlindSlatThickness" minOccurs="0"/>
+				<xsd:element ref="BlindCurvature" minOccurs="0"/>
+				<xsd:element ref="BlindWidth" minOccurs="0"/>
+				<xsd:element ref="BlindSpacing" minOccurs="0"/>
+				<xsd:element ref="BlindAngle" minOccurs="0"/>
+				<xsd:element ref="DiffusingGlassCoverageFraction" minOccurs="0"/>
+				<xsd:element ref="WovenShadeOpenessFraction" minOccurs="0"/>
+				<xsd:element ref="WovenShadeThreadDiameter" minOccurs="0"/>
+				<xsd:element ref="WovenShadeThreadSpacing" minOccurs="0"/>
+				<xsd:element ref="WovenShadeThickness" minOccurs="0"/>
+				<xsd:element ref="CellularShadeCellHeight" minOccurs="0"/>
+				<xsd:element ref="CellularShadeCellInnerWallLength" minOccurs="0"/>
+				<xsd:element ref="CellularShadeCellSideWallLength" minOccurs="0"/>
+				<xsd:element ref="PleatedShadeCellHeight" minOccurs="0"/>
+				<xsd:element ref="PleatedShadeCellSideWallLength" minOccurs="0"/>
+				
+			</xsd:all>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="DataDefinition">
+		<xsd:annotation>
+			<xsd:documentation>If this element is not defined it is assumed to be the same angle basis as in the Layer block</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="IncidentDataStructure" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Define  what the structure of the BSDF matrix is. The only option currently is Column, which means that every incident angle is in a column, and the outgoing directions are in rows. Not required for Non-BSDF filetypes</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="AngleBasis" maxOccurs="unbounded"/>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="IncidentDataStructure" type="IncidentDataStructureEnum"/>
+	<xsd:element name="AngleBasis">
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:annotation>
+					<xsd:documentation>This is where the Name of the The basis that WINDOW6 will be using as a default: "WINDOW6 basis" </xsd:documentation>
+				</xsd:annotation>
+				<xsd:element ref="AngleBasisName">
+					<xsd:annotation>
+						<xsd:documentation>AngleBasisName  gives a name to the following AngleBasis. Values could be LBNL/Klems or IEA Task 21 Incident,IEA Task 21 Transmitted, IEA Task 21 Reflected  .</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="AngleBasisBlock" maxOccurs="unbounded">
+					<xsd:annotation>
+						<xsd:documentation>AngleBasisBlock contains the actual Theta, Phi pairs for the angular basis. The Solid Angle can also be specified, for each Theta, Phi pair, but is not required. The order of these pairs is very important, it is later used to figure out the order in the ScatteringData element. nPhis is used when defining a basis with evenly spaced phi's around 360 degrees. ThetaBounds is used  to specify what the boundaries of the theta band are (theta is the midpoint of the band). It is a complextype defined below with an upper and lower parameter </xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="AngleBasisBlock">
+		<xsd:annotation>
+			<xsd:documentation>AngleBasisBlock is the actual Theta, Phi pairs for the angular basis. The Solid Angle can also be specified, for each Theta, Phi pair, but is not required. The order of these pairs is very important, it is later used to figure out the order in the ScatteringData element. nPhis is used when defining a basis with evenly spaced phi's around 360 degrees. ThetaBounds is used with nPhis, to specify what the boundaries of the theta band are (theta is the midpoint of the band). It is a complextype defined below with an upper and lower parameter </xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:annotation>
+					<xsd:documentation>nPhis stands for number of Phi's within a theta band. They are assumed to be evenly spaced, and starting at Phi=0. This element should not be used in combination with the Phi  element.</xsd:documentation>
+				</xsd:annotation>
+				<xsd:element ref="Theta"/>
+				<xsd:choice>
+					<xsd:annotation>
+						<xsd:documentation>The user can only ue either Phi values, or specifying the number of Phis that are evenly spaced</xsd:documentation>
+					</xsd:annotation>
+					<xsd:element ref="Phi" minOccurs="0"/>
+					<xsd:element ref="nPhis" minOccurs="0"/>
+				</xsd:choice>
+				<xsd:choice>
+					<xsd:element ref="SolidAngle" minOccurs="0"/>
+					<xsd:element ref="ThetaBounds" minOccurs="0"/>
+				</xsd:choice>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="ThetaBounds">
+		<xsd:annotation>
+			<xsd:documentation>ThetaBounds is a element that describes the upper and lower bounds around a theta midpoint of a band. It is a sub of the AngleBasisBlock</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="LowerTheta" minOccurs="0"/>
+				<xsd:element ref="UpperTheta" minOccurs="0"/>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="WavelengthData">
+		<xsd:annotation>
+			<xsd:documentation>Wavelength is a string that holds the description for what spectral wavelength this property is valid. Entries could be Visible (380-780 nm), Solar (300-2500nm), NIR (near infrared 780-2500) FIR (far infrared), UV, or value. Value is a value in nanometers, such as 300</xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element name="LayerNumber" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>This could be System if the properties are for a whole system, or 1,2,3 etc referring to a layer in the system. For the absorbed fraction we need to provide it per layer</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="Angle" minOccurs="0"/>
+				<xsd:element ref="Wavelength" minOccurs="0"/>
+				<xsd:element ref="SourceSpectrum" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Describes what the Source Spectrum was for the spectrally averaged optical properties (ie visible transmittance and solar transmittance). References can be to the WINDOW6 Standards File name.This can be ignored if spectral data is used in WavelengthData.
+						 default in WINDOW6 for visible is:CIE Illuminant D65 1nm.ssp and for solar:ASTM E891 Table 1 Direct AM1_5.ssp </xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="DetectorSpectrum" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>Describes what the Detector Spectrum was for the spectrally averaged optical properties (ie visible transmittance and solar transmittance). This can be ignored if spectral data is used in WavelengthData.
+						 default in WINDOW6 for visible is:ASTM E308 1931 Y.dsp and for solar:None</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="WavelengthDataBlock" maxOccurs="unbounded"/>
+				<xsd:element ref="Comments" minOccurs="0"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Angle">
+		<xsd:complexType>
+			<xsd:annotation>
+				<xsd:documentation>Used to specify data sets at various angles (non-bsdf), used for Angle Tubes data</xsd:documentation>
+			</xsd:annotation>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:string">
+					<xsd:attribute name="basis" type="xsd:string" use="optional"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Wavelength">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:string">
+					<xsd:attribute name="unit" type="WavelengthUnitEnum" use="required"/>
+					<xsd:attribute name="type" type="xsd:string" use="optional"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="WavelengthDataBlock">
+		<xsd:annotation>
+			<xsd:documentation>WavelengthDataBlock is a complex data type that contains the WavelengthDataType (Transmittance etc) and the actual ScatteringData </xsd:documentation>
+		</xsd:annotation>
+		<xsd:complexType>
+			<xsd:sequence>
+				<xsd:element ref="WavelengthDataDirection"/>
+				<xsd:element name="ColumnAngleBasis" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>This entry defines which Angular Basis is used for the columns in the matrix. This should reference an entry from (AngleBasisName)</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element name="RowAngleBasis" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>This entry defines which Angular Basis is used for the rows in the matrix. This should reference an entry from (AngleBasisName)</xsd:documentation>
+					</xsd:annotation>
+				</xsd:element>
+				<xsd:element ref="ScatteringDataType" maxOccurs="unbounded"/>
+				<xsd:element ref="ScatteringData" maxOccurs="unbounded"/>
+			</xsd:sequence>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:annotation>
+		<xsd:documentation>Create an attribute for wavelength called unit, that defines the units for the wavelength. 
+								this could be , for a integrated wavelength band such as solar, visible etc, or nanometers, or microns</xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="ScatteringData" type="xsd:string">
+		<xsd:annotation>
+			<xsd:documentation>ScatteringData is a long string that contains the BSDF values space seperated.  for the AbsorbedFraction this is a 2d matrix for BSDF's This string is long, for the Klems Basis it is 145*145 values long. The order in which these values are presented is defined in the DataDefinition element. For the absorbed fraction it is only a 1-d array of 145 values</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="Thickness">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="required"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="BlindSlatThickness">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="BlindCurvature">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="BlindWidth">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="BlindSpacing">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="Theta" type="xsd:double"/>
+	<xsd:element name="Phi" type="xsd:double"/>
+	<xsd:element name="nPhis" type="xsd:double"/>
+	<xsd:element name="UpperTheta" type="xsd:double"/>
+	<xsd:element name="LowerTheta" type="xsd:double"/>
+	<xsd:element name="BlindAngle" type="xsd:double"/>
+	<xsd:element name="SolidAngle" type="xsd:double"/>
+	<xsd:element name="Name" type="xsd:string"/>
+	<xsd:element name="ProductName" type="xsd:string"/>
+	<xsd:element name="Reference" type="xsd:string"/>
+	<xsd:element name="Manufacturer" type="xsd:string"/>
+	<xsd:element name="ThermalConductivity" type="xsd:double"/>
+	<xsd:element name="EmissivityFront" type="xsd:double"/>
+	<xsd:element name="EmissivityBack" type="xsd:double"/>
+	<xsd:annotation>
+		<xsd:documentation>EmissivityFront or Back is a decimal value that describes the emissivity of the whole system, not just the material. THis value is only needed if there is no BTDF data for the IR range  </xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="TIR" type="xsd:double"/>
+	<xsd:element name="EffectiveOpennessFraction" type="xsd:double"/>
+	<xsd:annotation>
+		<xsd:documentation>TIR is a decimal value that describes the InfraRed transmittance. THis value is only needed if there is no BTDF data for the IR range  </xsd:documentation>
+	</xsd:annotation>
+	<xsd:element name="Color" type="xsd:string"/>
+	<xsd:element name="AirPermeability" type="xsd:double"/>
+	<xsd:element name="Comments" type="xsd:string"/>
+	<xsd:element name="SourceSpectrum" type="xsd:string"/>
+	<xsd:element name="DetectorSpectrum" type="xsd:string"/>
+	<xsd:element name="DiffusingGlassCoverageFraction" type="xsd:double"/>
+	<xsd:element name="WovenShadeOpenessFraction">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double"/>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="WovenShadeThreadDiameter">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="WovenShadeThreadSpacing">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="WovenShadeThickness">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="CellularShadeCellHeight">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="CellularShadeCellInnerWallLength">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="unit" type="LengthUnitEnum" use="optional" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+	<xsd:element name="CellularShadeCellSideWallLength">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="cavity" type="xsd:int" use="optional"/>
+					<xsd:attribute name="unit" type="LengthUnitEnum" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+<xsd:element name="PleatedShadeCellSideWallLength">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="cavity" type="xsd:int" use="optional"/>
+					<xsd:attribute name="unit" type="LengthUnitEnum" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+<xsd:element name="PleatedShadeCellHeight">
+		<xsd:complexType>
+			<xsd:simpleContent>
+				<xsd:extension base="xsd:double">
+					<xsd:attribute name="cavity" type="xsd:int" use="optional"/>
+					<xsd:attribute name="unit" type="LengthUnitEnum" default="Meter"/>
+				</xsd:extension>
+			</xsd:simpleContent>
+		</xsd:complexType>
+	</xsd:element>
+
+
+
+	<xsd:element name="Transmittance" type="xsd:double"/>
+	<xsd:element name="ReflectanceFront" type="xsd:double"/>
+	<xsd:element name="ReflectanceBack" type="xsd:double"/>
+	<xsd:element name="AngleBasisName" type="xsd:string"/>
+	<xsd:element name="ColumnAngleBasis" type="xsd:string"/>
+	<xsd:element name="RowAngleBasis" type="xsd:string"/>
+	<xsd:element name="WavelengthDataDirection" type="WavelengthDataDirectionEnum">
+		<xsd:annotation>
+			<xsd:documentation>WavelengthDataDirection is a string  that describes what type the following data is. Valid values are: "Transmission Front, Transmission Back, Reflection Front and Reflection Back or Absorbed </xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="WindowElementType" type="WindowElementTypeEnum"/>
+	<xsd:element name="FileType" type="FileTypeEnum"/>
+	<xsd:element name="ScatteringDataType" type="ScatteringDataTypeEnum">
+		<xsd:annotation>
+			<xsd:documentation>ScatteringDataType is a string  that describes what type the following data is. Valid values are: "BTDF, Fractional. BTDF has values from 0 to infinity and the units are per steradian, Fractional  has values from 0-1. Reflection and Transmission are usually BTDF. Absorption is fractional since it is only a vector, not a matrix</xsd:documentation>
+		</xsd:annotation>
+	</xsd:element>
+	<xsd:element name="WindowElement">
+		<xsd:complexType>
+			<xsd:all>
+				<xsd:element ref="WindowElementType"/>
+				<xsd:element ref="FileType"/>
+				<xsd:element name="Checksum"/>
+				<xsd:element name="Optical">
+					<xsd:complexType>
+						<xsd:all>
+							<xsd:element name="Layer">
+								<xsd:annotation>
+									<xsd:documentation>This element contains the full angular definition, headers and BSDF data for a layer or a system (collection of layers)</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element ref="Material" minOccurs="0" maxOccurs="unbounded"/>
+										<xsd:element ref="Geometry" minOccurs="0"/>
+										<xsd:element ref="DataDefinition"/>
+										<xsd:element ref="WavelengthData" minOccurs="0" maxOccurs="unbounded"/>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+						</xsd:all>
+					</xsd:complexType>
+				</xsd:element>
+				<xsd:element name="Thermal" minOccurs="0">
+					<xsd:annotation>
+						<xsd:documentation>This element stores all the thermal information that WINDOW6 uses to calculate the thermal performance of the blind.
+			It is derived from the Tarcog.dbg (debug) file that is written by the Tarcog.dll which performs all the Center-Of-Glass (COG) thermal calculations
+			Created by Christian Kohler / LBNL in September 2007</xsd:documentation>
+					</xsd:annotation>
+					<xsd:complexType>
+						<xsd:sequence>
+							<xsd:element name="SimulationParameters">
+								<xsd:complexType>
+									<xsd:all>
+										<xsd:element name="Units"/>
+										<xsd:element name="Tout"/>
+										<xsd:element name="Tint"/>
+										<xsd:element name="Trmin"/>
+										<xsd:element name="wso"/>
+										<xsd:element name="iwd"/>
+										<xsd:element name="wsi"/>
+										<xsd:element name="dir"/>
+										<xsd:element name="isky"/>
+										<xsd:element name="tsky"/>
+										<xsd:element name="esky"/>
+										<xsd:element name="fclr"/>
+										<xsd:element name="ibc1"/>
+										<xsd:element name="hout"/>
+										<xsd:element name="ibc2"/>
+										<xsd:element name="hin"/>
+										<xsd:element name="mgas"/>
+										<xsd:element name="standard"/>
+										<xsd:element name="ThermalMod"/>
+										<xsd:element name="SDScalar"/>
+									</xsd:all>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="IGUParameters">
+								<xsd:complexType>
+									<xsd:all>
+										<xsd:element name="height"/>
+										<xsd:element name="heightt" minOccurs="0"/>
+										<xsd:element name="width"/>
+										<xsd:element name="tilt" minOccurs="0"/>
+										<xsd:element name="totsol"/>
+										<xsd:element name="nlayer"/>
+									</xsd:all>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="IGULayers" maxOccurs="unbounded">
+								<xsd:complexType>
+									<xsd:all>
+										<xsd:element name="Number"/>
+										<xsd:element name="LayerType"/>
+										<xsd:element name="thick"/>
+										<xsd:element name="scon"/>
+										<xsd:element name="asol"/>
+										<xsd:element name="tir"/>
+										<xsd:element name="emis1"/>
+										<xsd:element name="emis2"/>
+										<xsd:element name="Atop" minOccurs="0"/>
+										<xsd:element name="Abot" minOccurs="0"/>
+										<xsd:element name="Al" minOccurs="0"/>
+										<xsd:element name="Ar" minOccurs="0"/>
+										<xsd:element name="Ah" minOccurs="0"/>
+										<xsd:element name="SlatThick" minOccurs="0"/>
+										<xsd:element name="SlatWidth" minOccurs="0"/>
+										<xsd:element name="SlatAngle" minOccurs="0"/>
+										<xsd:element name="SlatCond" minOccurs="0"/>
+										<xsd:element name="SlatSpacing" minOccurs="0"/>
+										<xsd:element name="SlatCurve" minOccurs="0"/>
+									</xsd:all>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="IGUGaps" maxOccurs="unbounded">
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="Gap">
+											<xsd:annotation>
+												<xsd:documentation>This could be Outdoor, Indoor, or the gap number (1,2,3 ec)</xsd:documentation>
+											</xsd:annotation>
+										</xsd:element>
+										<xsd:element name="Width" minOccurs="0"/>
+										<xsd:element name="pressure"/>
+										<xsd:element name="vvent" minOccurs="0"/>
+										<xsd:element name="tvent" minOccurs="0"/>
+										<xsd:element name="nmix"/>
+										<xsd:element name="gas" maxOccurs="unbounded">
+											<xsd:complexType>
+												<xsd:all>
+													<xsd:element name="Number">
+														<xsd:annotation>
+															<xsd:documentation>This is the sequence of the number of gases a mix it made from</xsd:documentation>
+														</xsd:annotation>
+													</xsd:element>
+													<xsd:element name="Concentration"/>
+													<xsd:element name="gcon">
+														<xsd:complexType>
+															<xsd:all>
+																<xsd:element name="A"/>
+																<xsd:element name="B"/>
+																<xsd:element name="C"/>
+															</xsd:all>
+														</xsd:complexType>
+													</xsd:element>
+													<xsd:element name="gvis">
+														<xsd:complexType>
+															<xsd:all>
+																<xsd:element name="A"/>
+																<xsd:element name="B"/>
+																<xsd:element name="C"/>
+															</xsd:all>
+														</xsd:complexType>
+													</xsd:element>
+													<xsd:element name="gcp">
+														<xsd:complexType>
+															<xsd:all>
+																<xsd:element name="A"/>
+																<xsd:element name="B"/>
+																<xsd:element name="C"/>
+															</xsd:all>
+														</xsd:complexType>
+													</xsd:element>
+													<xsd:element name="wght"/>
+												</xsd:all>
+											</xsd:complexType>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="AdjustedArguments">
+								<xsd:annotation>
+									<xsd:documentation>Not sure why this section exists in the tarcog.dbg file, but it is replicated here for consistency</xsd:documentation>
+								</xsd:annotation>
+								<xsd:complexType>
+									<xsd:sequence>
+										<xsd:element name="esky"/>
+										<xsd:element name="Trmout"/>
+										<xsd:element name="Trmin"/>
+										<xsd:element name="Ebsky"/>
+										<xsd:element name="Ebroom"/>
+										<xsd:element name="Gout"/>
+										<xsd:element name="Gin"/>
+										<xsd:element name="Layer">
+											<xsd:complexType>
+												<xsd:all>
+													<xsd:element name="Number"/>
+													<xsd:element name="LayerType"/>
+													<xsd:element name="thick"/>
+													<xsd:element name="scon"/>
+												</xsd:all>
+											</xsd:complexType>
+										</xsd:element>
+										<xsd:element name="IGUGaps" maxOccurs="unbounded">
+											<xsd:complexType>
+												<xsd:sequence>
+													<xsd:element name="Gap"/>
+													<xsd:element name="Gas" maxOccurs="unbounded">
+														<xsd:complexType>
+															<xsd:sequence>
+																<xsd:element name="Number"/>
+																<xsd:element name="Concentration"/>
+																<xsd:element name="gcon">
+																	<xsd:complexType>
+																		<xsd:all>
+																			<xsd:element name="A"/>
+																			<xsd:element name="B"/>
+																			<xsd:element name="C"/>
+																		</xsd:all>
+																	</xsd:complexType>
+																</xsd:element>
+																<xsd:element name="gvis">
+																	<xsd:complexType>
+																		<xsd:all>
+																			<xsd:element name="A"/>
+																			<xsd:element name="B"/>
+																			<xsd:element name="C"/>
+																		</xsd:all>
+																	</xsd:complexType>
+																</xsd:element>
+																<xsd:element name="gcp">
+																	<xsd:complexType>
+																		<xsd:all>
+																			<xsd:element name="A"/>
+																			<xsd:element name="B"/>
+																			<xsd:element name="C"/>
+																		</xsd:all>
+																	</xsd:complexType>
+																</xsd:element>
+																<xsd:element name="wght"/>
+															</xsd:sequence>
+														</xsd:complexType>
+													</xsd:element>
+												</xsd:sequence>
+											</xsd:complexType>
+										</xsd:element>
+									</xsd:sequence>
+								</xsd:complexType>
+							</xsd:element>
+							<xsd:element name="Frames">
+								<xsd:annotation>
+									<xsd:documentation>This section contains the thermal information related to frames, such as film coeff, conductance, PDF</xsd:documentation>
+								</xsd:annotation>
+							</xsd:element>
+						</xsd:sequence>
+					</xsd:complexType>
+				</xsd:element>
+			</xsd:all>
+		</xsd:complexType>
+	</xsd:element>
+</xsd:schema>
