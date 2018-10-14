@@ -1,4 +1,4 @@
-###BSDF sample files.   
+### BSDF sample files.   
 
 This repository contains sample BSDF files. Details about the source of BSDFs is provided below:  
 + BCL: These BSDF materials are available on [Building Components Library website for download](https://bcl.nrel.gov/search/site/BSDF).
