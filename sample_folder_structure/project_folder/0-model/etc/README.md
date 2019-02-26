@@ -1,5 +1,8 @@
-# scene
-This folder includes all **non** aperture surfaces in the scene. In most cases there are only 3 files in this folder:
+# etc
+
+`./0-model/etc`
+
+This folder includes all **non**-aperture geometry in Radiance model. In most cases there are only 3 files in this folder:
 
 1. `geometry.rad`: This file includes only radiance surfaces and should not include any of the radiance modifiers/materials.
 2. `material.rad`: This file includes all the modifiers for surfaces in `geometry.rad`.
@@ -17,13 +20,13 @@ In case you want to separate files for different parts of the scene you should f
 
 # Sub-folders
 
-## ./interior
+## ./opaque/interior
 
 This in an optional folder for <u>interior-only</u> geometries. Naming convention is similar to scene folder. These files will only be included in view matrix calculation and will not be part of daylight matrix. Separating the files is helpful to relax radiance parameters for different phases of matrix-based studies.
 
 <u>This folder is only useful for 3-Phase and 5-Phase studies</u>. For other recipes the files in `interior` folder will be part of the study just like any other geometry file in `scene` folder.
 
-## ./exterior
+## ./non-opaque/exterior
 This in an optional folder for <u>exterior-only</u> geometries. Naming convention is similar to scene folder. These files will only be included in daylight matrix calculation and will not be part of view matrix. Separating the files is helpful to relax radiance parameters for view matrix calculation by minimizing the size of the scene.
 
 <u>This folder is only useful for 3-Phase and 5-Phase studies</u>. For other recipes the files in `exterior` folder will be part of the study just like any other geometry file in `scene` folder.
