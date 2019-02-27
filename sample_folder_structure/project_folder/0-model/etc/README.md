@@ -2,7 +2,17 @@
 
 `./0-model/etc`
 
-This folder includes all **non**-aperture geometry in Radiance model. In most cases there are only 3 files in this folder:
+This folder includes all the geometry in model except for the apertures. The files should
+be copied into one of the two subfolders:
+
+1. `opaque`: Includes all geometries with opaque materials.
+2. `nonopaque`: Includes all geometries with transparent/ translucent and any other modifiers that light can penetrate through.
+
+In direct sunlight calculation the content in `opaque` folder will be blacked out but the
+geometry in nonopaque folder will be used as is. 
+
+
+In most cases there are only 3 files in this folder:
 
 1. `geometry.rad`: This file includes only radiance surfaces and should not include any of the radiance modifiers/materials.
 2. `material.rad`: This file includes all the modifiers for surfaces in `geometry.rad`.

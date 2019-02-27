@@ -1,4 +1,4 @@
-# aperture
+# dynamic aperture
 
 `/0-model/aperture/dynamic`
 
@@ -34,19 +34,19 @@ south_window:
   state_0:
     name: clear
     default: south_window..default..000.rad
-    direct: south_window..direct..000.rad
-    blk: south_window..blk..000.rad
-    tmtx: .../bsdf/clear.xml
-    inmtx: south_window..glw..000.rad
-    outmtx: south_window..glw..000.rad
+    direct: south_window..default..000.rad
+    blk: south_window..black.rad
+    tmtx: clear.xml  # this file must be located at 0-model/bsdf folder
+    inmtx: south_window..mtx.rad
+    outmtx: south_window..mtx.rad
   state_1:
     name: diffuse
     default: south_window..default..001.rad
-    direct: south_window..direct..001.rad
-    blk: south_window..blk..001.rad
-    tmtx: .../bsdf/diffuse.xml
-    inmtx: south_window..glw..001.rad
-    outmtx: south_window..glw..001.rad
+    direct: south_window..default..001.rad
+    blk: south_window..black.rad
+    tmtx: diffuse50.xml  # this file must be located at 0-model/bsdf folder
+    inmtx: south_window..mtx.rad
+    outmtx: south_window..mtx.rad
 ```
 
 You can add more than one aperture to the yaml file. For instance if we wanted to add
@@ -61,8 +61,11 @@ skylight:
     direct: skylight..direct..000.rad
     blk: skylight..blk..000.rad
     tmtx: .../bsdf/diffuse.xml
-    inmtx: skylight..glw..000.rad
-    outmtx: skylight..glw..000.rad
+    inmtx: skylight..mtx..000.rad
+    outmtx: skylight..mtx..000.rad
 ```
 
 ## Naming convention
+
+It is recommended to name the file as `<aperture name>..<field name>..<state count>`. For
+instance `skylight..direct.000.rad` is the direct representation of skylight for state 0.

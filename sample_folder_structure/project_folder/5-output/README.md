@@ -1,5 +1,5 @@
-# Result
+# Output
 
-`./result`
+`./5-output`
 
-Folder to save results.
+Folder to redirect Radiance outputs.

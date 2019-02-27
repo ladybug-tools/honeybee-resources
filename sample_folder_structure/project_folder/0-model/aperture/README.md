@@ -16,8 +16,8 @@ blinds. In such case each state of dynamic blind should be defined as a separate
 You can have as many as dynamic aperture as needed in your model. Keep in mind that the
 contribution from each dynamic aperture will be calculated separately.
 
-Static apertures are represented by a single state which is the default material of the
-aperture. All the static apertures in the scene should be inside `/0-model/aperture/static`
+Static apertures have a single state which is the default material of the aperture.
+All the static apertures in the scene should be inside `/0-model/aperture/static`
 folder. The contribution from all the static aperture will be calculated together.
 
 In this sample model the `south window` is the only dynamic aperture in the model with

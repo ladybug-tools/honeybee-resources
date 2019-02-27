@@ -1,9 +1,0 @@
-void plastic partition_wall
-0
-0
-5 0.5 0.5 0.5 0.0 0.0
-
-partition_wall polygon partition
-0
-0
-12 2.0 -1.2 0.0 2.0 -1.2 1.2 -2.0 -1.2 1.2 -2.0 -1.2 0.0
