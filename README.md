@@ -3,10 +3,6 @@ A repository to collect resources for honeybee daylight and or energy simulation
 
 ## Folders
 
-### [sample folder structure](https://github.com/ladybug-tools/honeybee-resources/tree/master/sample_folder_structure)
-
-A repository to include standard folder structure for honeybee studies. It currently includes folder structure for daylight studies.
-
 ### [scripts](https://github.com/ladybug-tools/honeybee-resources/tree/master/scripts)
 
 A repository of scripts that shows how to use Ladybug and Honeybee APIs. See the header of each script for more information.
