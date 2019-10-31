@@ -1,5 +1,5 @@
 # honeybee-resources
-A repository to collect resources for honeybee daylight and or energy simulation
+A repository to collect resources for honeybee daylight and/or energy simulation
 
 ## Folders
 
